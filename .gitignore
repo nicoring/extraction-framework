@@ -6,3 +6,8 @@ target/
 *.lck
 *.tmp
 java_pid*
+
+# generated files from extraction
+*.gz
+*.obj
+*-extraction-complete
