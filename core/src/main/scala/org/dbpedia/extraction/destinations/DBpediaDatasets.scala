@@ -64,4 +64,8 @@ object DBpediaDatasets
     val DisambiguationLinks  = new Dataset("disambiguations")
     val Homepages = new Dataset("homepages")
 
+    /**
+     * Lists
+     */
+    val Lists = new Dataset("lists")
 }
