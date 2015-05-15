@@ -101,4 +101,6 @@ object DBpediaDatasets
     val WikidataRawReified = new Dataset("raw-reified")
     val WikidataRawReifiedQualifiers = new Dataset("raw-reified-qualifiers")
     val WikidataReference = new Dataset("references")
+    val WikidataLists = new Dataset("lists")
+
 }
