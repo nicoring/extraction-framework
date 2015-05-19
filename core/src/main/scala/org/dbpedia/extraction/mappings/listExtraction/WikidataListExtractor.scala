@@ -1,12 +1,13 @@
 package org.dbpedia.extraction.mappings
 
 import org.dbpedia.extraction.destinations.{DBpediaDatasets, Dataset, Quad}
-import org.dbpedia.extraction.mappings.{PageContext, PageNodeExtractor}
+import org.dbpedia.extraction.mappings.listExtraction.{TableList, BulletPointList, ListParser}
 import org.dbpedia.extraction.ontology.Ontology
 import org.dbpedia.extraction.util.Language
 import org.dbpedia.extraction.wikiparser._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
 
 /**
  * Extractor to extract Lists from Wikipedia List_of pages
@@ -17,11 +18,11 @@ class WikidataListExtractor(
      def ontology: Ontology
      def language: Language
    }
-) extends PageNodeExtractor {
+) extends PageNodeExtractor with ListParser {
 
   override val datasets: Set[Dataset] = Set(DBpediaDatasets.WikidataLists)
 
-  // will be changed to some proper value
+  // need to be changed to some proper value
   private val sameAsProperty = context.ontology.properties("owl:sameAs")
 
   /**
@@ -30,43 +31,41 @@ class WikidataListExtractor(
    * @param pageContext The page context which holds the state of the extraction.
    * @return A graph holding the extracted data
    */
-   override def extract(page: PageNode, subjectUri: String, pageContext: PageContext): Seq[Quad] = {
+  override def extract(page: PageNode, subjectUri: String, pageContext: PageContext): Seq[Quad] = {
     val pageElems = page.children
     val title = page.title
 
-    // prints the AST
-    println(pageElems)
-
-    // list members are all node that are IntenalLinkNodes
-    val listMembers = for (InternalLinkNode(destination, children, line, destinationNodes) <- pageElems) yield InternalLinkNode(destination, children, line, destinationNodes)
 
     val titleText = title.encoded
-    println(s"\n\n### $titleText ###\n")
+    val wikiList = parse(pageElems)
 
-    for (listMember <- listMembers) println(listMember)
+    wikiList match {
+      case BulletPointList(entries) => {
+        println(s"\n\n### $titleText ###\n")
+        for (entry <- entries) println(entry.destination.encoded)
+      }
+      case TableList() => ???
+    }
 
+//   createQuads()
+    Seq.empty
+  }
 
-    // dummy triple creation
+  /**
+   *
+   * @param listMembers List of Links in the List
+   * @param subjectUri Uri of the list page
+   * @param title title of the list Page
+   * @return A sequence of quads containing the created triples
+   */
+  def createQuads(listMembers: List[InternalLinkNode], subjectUri: String, title: WikiTitle): Seq[Quad]= {
     val listIris = for (entry <- listMembers) yield entry.destination.resourceIri
 
     val quads = new ArrayBuffer[Quad]()
 
     for (listIri <- listIris) {
-      println(listIri)
       quads += new Quad(context.language, DBpediaDatasets.WikidataLists, listIri, sameAsProperty, subjectUri, title.pageIri)
     }
     quads
   }
-
-
-  // dont works
-//  def getListMembers(pageElems: List[Node]): List[InternalLinkNode] = pageElems match {
-//    case Nil => Nil
-//    case TextNode("*", 2) :: listNode :: tail => {
-//      case listNode: InternalLinkNode => listNode :: getListMembers(tail)
-//      case _ => getListMembers(tail)
-//    }
-//    case _ :: tail => getListMembers(tail)
-//  }
-
 }
